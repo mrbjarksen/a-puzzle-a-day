@@ -1,0 +1,16 @@
+[package]
+name = "a-puzzle-a-day"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+chrono = "0.4.31"
+clap = { version = "4.4.6", features = ["derive"] }
+console = "0.15.7"
+crossterm = "0.27.0"
+dialoguer = "0.11.0"
+indicatif = "0.17.7"
+rand = "0.8.5"
+ratatui = "0.23.0"
