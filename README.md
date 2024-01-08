@@ -37,7 +37,7 @@ Solutions are found using brute-force, each piece placed on each square in paral
 Care has been made in minimizing the amount of work needed, but the generation will
 take at least a few seconds and a few dozen threads.
 
-![generate](https://github.com/mrbjarksen/a-puzzle-a-day/assets/62466569/32bc3232-d3cb-4507-a3f8-ef840d34f382)
+![generate](https://github.com/mrbjarksen/a-puzzle-a-day/assets/62466569/03eb50bb-c795-42b9-9f35-5eebe4e05776)
 
 ### Random
 ```
