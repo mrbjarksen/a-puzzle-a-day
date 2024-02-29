@@ -50,16 +50,16 @@ pub fn generate_solutions(starting_board: Board, pieces: Vec<Piece>, progress: O
             });
             forks.push(fork_tx);
         }
-        let bar = last_piece.map(|pc| progress.map(|mp| mp.add(make_spinner(pc)))).flatten();
+        let bar = last_piece.and_then(|pc| progress.map(|mp| mp.add(make_spinner(pc))));
         thread::spawn(move || {
             for board in last_rx.iter() {
                 let board = Arc::new(board);
                 for fork_tx in forks.iter() {
                     fork_tx.send(Arc::clone(&board)).unwrap();
                 }
-                bar.as_ref().map(|b| b.inc(1));
+                if let Some(b) = bar.as_ref() { b.inc(1) }
             }
-            bar.map(finish_spinner);
+            if let Some(b) = bar { finish_spinner(b) }
         });
         last_rx = rx;
         last_piece = Some(piece);
@@ -70,9 +70,9 @@ pub fn generate_solutions(starting_board: Board, pieces: Vec<Piece>, progress: O
     thread::spawn(move || {
         for board in last_rx.iter() {
             txn.send(board).unwrap();
-            bar.as_ref().map(|b| b.inc(1));
+            if let Some(b) = bar.as_ref() { b.inc(1) }
         }
-        bar.map(finish_spinner);
+        if let Some(b) = bar { finish_spinner(b) }
     });
 
     Ok(rxn)

@@ -17,10 +17,10 @@ impl TryFrom<CompactBoard> for Board {
     type Error = PlacementError;
 
     fn try_from(cb: CompactBoard) -> Result<Self, Self::Error> {
-        let mut board = Board::new();
+        let mut board = Board::default();
         let pieces = Piece::pieces();
-        for i in 0..8 {
-            if let (Some(square), rotation, mirror, piece) = (cb.squares[i], cb.rotations[i], cb.mirrors[i], pieces[i]) {
+        for (i, &piece) in pieces.iter().enumerate() {
+            if let (Some(square), rotation, mirror) = (cb.squares[i], cb.rotations[i], cb.mirrors[i]) {
                 let path = Path::from_orientation(piece, rotation, mirror);
                 board = board.place(piece, square, &path).ok_or(PlacementError)?;
             }

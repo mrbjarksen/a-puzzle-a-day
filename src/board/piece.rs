@@ -32,10 +32,7 @@ impl Piece {
     }
 
     pub fn mirror_symmetric(&self) -> bool {
-        match self {
-            O | U | V => true,
-            _ => false,
-        }
+        matches!(self, O | U | V)
     }
 
     pub fn square_count(&self) -> usize {

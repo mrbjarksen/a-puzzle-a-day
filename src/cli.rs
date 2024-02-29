@@ -89,7 +89,7 @@ fn parse_date(value: &str) -> Result<Date, String> {
     }
 }
 
-pub fn parse_date_or_today<'a>(value: &'a str) -> Result<Date, String> {
+pub fn parse_date_or_today(value: &str) -> Result<Date, String> {
     let normalized = value.trim().to_lowercase();
     match normalized.as_str().strip_prefix("today") {
         Some(offset) => parse_today(offset),

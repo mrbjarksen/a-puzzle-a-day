@@ -16,7 +16,7 @@ fn generate(file: PathBuf) -> Vec<Board> {
     
     use Piece::*;
     let pieces = vec![O, Z, V, U, Y, N, P, L];
-    let boards = match search::generate_solutions(Board::new(), pieces, Some(&progress)) {
+    let boards = match search::generate_solutions(Board::default(), pieces, Some(&progress)) {
         Ok(rx) => rx,
         Err(_) => {
             eprintln!("error encountered while generating solutions");

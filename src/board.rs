@@ -23,16 +23,18 @@ enum Status {
     Occupied(Piece),
 }
 
-impl Board {
-    pub fn new() -> Self {
+impl Default for Board {
+    fn default() -> Self {
         let mut status = [Empty; 45];
         status[6] = Nonexistent;
         status[13] = Nonexistent;
         Board(status)
     }
+}
 
+impl Board {
     pub fn place(&self, piece: Piece, start: Square, path: &Path) -> Option<Self> {
-        let mut status = self.0.clone();
+        let mut status = self.0;
         let mut square = start;
 
         match self.0[square as usize] {
@@ -114,9 +116,8 @@ impl Board {
         let mut placements = [None; 8];
         for square in Square::squares() {
             if let Occupied(piece) = self.0[square as usize] {
-                match (placements[piece as usize], self.check_placement(piece, square)) {
-                    (None, Some((rotation, mirror))) => { placements[piece as usize] = Some((square, rotation, mirror)); }
-                    _ => {}
+                if let (None, Some((rotation, mirror))) = (placements[piece as usize], self.check_placement(piece, square)) {
+                    placements[piece as usize] = Some((square, rotation, mirror));
                 }
             }
         }
@@ -151,7 +152,7 @@ impl Board {
 
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "╭───────────────────────────╮\n")?;
+        writeln!(f, "╭───────────────────────────╮")?;
 
         for row in 0..=7 {
             write!(f, "│ ")?;
@@ -182,7 +183,7 @@ impl fmt::Display for Board {
                     _ => "┼───",
                 })?;
             }
-            write!(f, "│\n")?; 
+            writeln!(f, "│")?; 
 
             if row < 7 {
                 write!(f, "│ ")?;
@@ -204,8 +205,8 @@ impl fmt::Display for Board {
                         }
                     };
                 }
-                if row == 1 { write!(f, "╰───╮\n")?; }
-                else { write!(f, "│\n")?; }
+                if row == 1 { writeln!(f, "╰───╮")?; }
+                else { writeln!(f, "│")?; }
             }
         }
 
@@ -218,10 +219,8 @@ impl fmt::Display for Board {
 impl Board {
     pub fn to_mini_string(&self) -> String {
         let mut result = String::new();
-        // result.push_str("╭───────────────╮\n");
 
         for row in 0..=7 {
-            // result.push_str("│ ");
             for col in 0..=7 {
                 result.push_str(match self.get_statuses_by_corner(row, col) {
                     (Nonexistent, Nonexistent, Nonexistent, Nonexistent) => if row == 7 { "  " } else { "" },
@@ -249,12 +248,7 @@ impl Board {
                     _ => "┼─",
                 });
             }
-            // result.push_str(
-            //     if row == 1 { "╰─╮\n" }
-            //     else { "│\n" }
-            // );
         }
-        // result.push_str("╰─────────────────╯");
         result
     }
 }
