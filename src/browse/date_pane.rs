@@ -1,4 +1,4 @@
-use super::{solution_pane, Pane, State, BIG, PADDING};
+use super::{solution_pane, Pane, State, BIG};
 
 use crate::board::Board;
 use crate::board::square::Date;
@@ -6,13 +6,15 @@ use crate::board::square::Date;
 use std::cmp::max;
 use std::collections::HashMap;
 
-use ratatui::layout::{Position, Offset};
-use ratatui::{prelude::*, widgets::*};
-
 use crossterm::event::{Event, KeyEventKind, KeyCode, MouseEventKind, MouseButton};
 
+use ratatui::terminal::Frame;
+use ratatui::layout::{Rect, Position, Offset};
+use ratatui::widgets::Paragraph;
+use ratatui::style::{Style, Color};
+
 #[derive(Debug)]
-pub struct DatePaneState {
+pub struct DatePane {
     pub selected: Date,
     pub top_date: Date,
     pub scroll: i32,
@@ -20,7 +22,7 @@ pub struct DatePaneState {
     pub buttons: HashMap<Rect, Date>,
 }
 
-impl DatePaneState {
+impl DatePane {
     pub fn new(date: Date) -> Self {
         Self {
             selected: date,
@@ -33,20 +35,9 @@ impl DatePaneState {
 }
 
 pub fn draw(state: &mut State, frame: &mut Frame) {
-    let block = Block::default()
-        .padding(Padding::horizontal(PADDING))
-        .borders(Borders::LEFT | Borders::RIGHT)
-        .border_type(BorderType::Thick)
-        .border_style(match state.focused_pane {
-            Pane::Date     => Style::default().fg(Color::Blue),
-            Pane::Solution => Style::default().add_modifier(Modifier::DIM),
-        });
-
-    frame.render_widget(block.clone(), state.date_pane.area);
-
     state.date_pane.buttons.clear();
 
-    let origin = Position::from(block.inner(state.date_pane.area));
+    let origin = Position::from(state.date_pane.area);
     let mut date = state.date_pane.top_date;
     for i in 0.. {
         let offset = Offset { x: 0, y: (BIG.height as i32 + 1) * i - state.date_pane.scroll };
@@ -55,7 +46,7 @@ pub fn draw(state: &mut State, frame: &mut Frame) {
 
         if offset.y < 0 {
             rect = Rect {
-                height: max(rect.height as i32 + offset.y, 0) as u16,
+                height: max(0, rect.height as i32 + offset.y) as u16,
                 ..rect
             };
         }
@@ -73,10 +64,10 @@ pub fn draw(state: &mut State, frame: &mut Frame) {
             .unwrap_or(&empty_board);
 
         let thumbnail = Paragraph::new(board.to_string())
-            .style(match state.date_pane.selected {
-                selected if date == selected => Style::default(),
-                _ => Style::default().add_modifier(Modifier::DIM),
-            })
+            .style(Style::default().fg(match state.date_pane.selected {
+                selected if date == selected => Color::White,
+                _ => Color::DarkGray,
+            }))
             .scroll(if rect.y == origin.y { (BIG.height - rect.height, 0) } else { (0, 0) });
 
         frame.render_widget(thumbnail, rect);
@@ -137,7 +128,7 @@ pub fn center_selection(state: &mut State) {
 }
 
 pub fn scroll_to_selection(state: &mut State) {
-    if state.date_pane.area.height < 2 * (BIG.height + 1) {
+    if state.date_pane.area.height < 3 * (BIG.height + 1) {
         center_selection(state);
         return;
     }

@@ -1,14 +1,14 @@
 pub mod solution_pane;
 pub mod date_pane;
 
-use self::solution_pane::SolutionPaneState;
-use self::date_pane::DatePaneState;
+use self::solution_pane::SolutionPane;
+use self::date_pane::DatePane;
 
 use crate::board::Board;
 use crate::board::square::{Date, DateMap};
 
-use std::cmp::max;
 use std::io;
+use std::cmp::max;
 use std::time::Duration;
 
 use rand::Rng;
@@ -16,16 +16,22 @@ use rand::Rng;
 use crossterm::ExecutableCommand;
 use crossterm::terminal;
 use crossterm::event::{self, Event, KeyCode};
-use ratatui::layout::{Size, Flex, Position};
-use ratatui::{prelude::*, widgets::*};
 
-enum Behavior {
+use ratatui::backend::CrosstermBackend;
+use ratatui::terminal::{Frame, Terminal};
+use ratatui::layout::{Layout, Flex, Position, Size};
+use ratatui::widgets::{Block, Paragraph, Padding};
+use ratatui::text::Line;
+use ratatui::style::{Style, Color};
+use ratatui::symbols::border;
+
+enum Message {
     Quit,
     Continue,
     Redraw,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum Pane {
     Date,
     Solution,
@@ -37,8 +43,8 @@ pub struct State {
     solution_count: DateMap<usize>,
     selected_solutions: DateMap<usize>,
     focused_pane: Pane,
-    date_pane: DatePaneState,
-    solution_pane: SolutionPaneState,
+    date_pane: DatePane,
+    solution_pane: SolutionPane,
 }
 
 impl State {
@@ -57,8 +63,8 @@ impl State {
             solution_count,
             selected_solutions,
             focused_pane: Pane::Solution,
-            date_pane: DatePaneState::new(date),
-            solution_pane: SolutionPaneState::default(),
+            date_pane: DatePane::new(date),
+            solution_pane: SolutionPane::default(),
         }
     }
 }
@@ -73,31 +79,69 @@ fn draw(state: &mut State, frame: &mut Frame) {
         (max_solution_pane_width + 1) / (SMALL.width + 1)
     };
 
-    if state.solution_pane.num_cols == 0 || frame.size().height < BIG.height {
+    if state.solution_pane.num_cols == 0 || frame.size().height < BIG.height + 2 {
         frame.render_widget(Paragraph::new("Terminal size is too small"), frame.size());
         return;
     }
 
     let panes = Layout::horizontal([
         BIG.width + 2*(PADDING + 1),
-        state.solution_pane.num_cols * (SMALL.width + 1) + 2*(PADDING + 1)
+        state.solution_pane.num_cols * (SMALL.width + 1) - 1 + 2*(PADDING + 1)
     ])
         .flex(Flex::Center)
         .split(frame.size());
 
-    state.date_pane.area = panes[0];
-    state.solution_pane.area = panes[1];
+    let block = Block::bordered()
+        .border_set(border::Set {
+            bottom_left: border::QUADRANT_RIGHT_HALF,
+            bottom_right: border::QUADRANT_LEFT_HALF,
+            horizontal_bottom: border::QUADRANT_BLOCK,
+            ..border::QUADRANT_INSIDE
+        })
+        .padding(Padding::horizontal(PADDING))
+        .title_style(Style::default().fg(Color::Black).bg(Color::Blue));
 
+    // Render date pane
+
+    frame.render_widget(
+        match state.focused_pane {
+            Pane::Date => block.clone()
+                .border_style(Style::default().fg(Color::Blue))
+                .title_bottom(Line::from("▎󰌒 : Switch▕▏↑/↓ : Choose▕▏").left_aligned())
+                .title_bottom(Line::from("▕▏󱊷 : Quit🮇").right_aligned()),
+            Pane::Solution => block.clone()
+                .border_style(Style::default().fg(Color::DarkGray)),
+        },
+        panes[0]
+    );
+
+    state.date_pane.area = block.inner(panes[0]);
     date_pane::draw(state, frame);
+
+    // Render solution pane
+    
+    frame.render_widget(
+        match state.focused_pane {
+            Pane::Date => block.clone()
+                .border_style(Style::default().fg(Color::DarkGray)),
+            Pane::Solution => block.clone()
+                .border_style(Style::default().fg(Color::Blue))
+                .title_bottom(Line::from("▎󰌒 : Switch▕▏↑/↓/←/→ : Choose▕▏").left_aligned())
+                .title_bottom(Line::from("▕▏󱊷 : Quit🮇").right_aligned()),
+        },
+        panes[1]
+    );
+
+    state.solution_pane.area = block.inner(panes[1]);
     solution_pane::draw(state, frame);
 }
 
-fn update(state: &mut State) -> io::Result<Behavior> {
+fn update(state: &mut State) -> io::Result<Message> {
     if event::poll(Duration::from_millis(100))? {
         match event::read()? {
             Event::Key(key) => {
                 if matches!(key.code, KeyCode::Esc | KeyCode::Char('q')) {
-                    return Ok(Behavior::Quit)
+                    return Ok(Message::Quit)
                 }
 
                 match state.focused_pane {
@@ -115,12 +159,12 @@ fn update(state: &mut State) -> io::Result<Behavior> {
                 }
             }
             Event::Resize(_, _) => {
-                return Ok(Behavior::Redraw);
+                return Ok(Message::Redraw);
             }
             _ => {}
         }
     }
-    Ok(Behavior::Continue)
+    Ok(Message::Continue)
 }
 
 fn run(boards: DateMap<Vec<Board>>, date: Date) -> io::Result<()> {
@@ -136,9 +180,9 @@ fn run(boards: DateMap<Vec<Board>>, date: Date) -> io::Result<()> {
     loop {
         terminal.draw(|frame| draw(&mut state, frame))?;
         match update(&mut state)? {
-            Behavior::Quit => { break; }
-            Behavior::Continue => {}
-            Behavior::Redraw => {
+            Message::Quit => { break; }
+            Message::Continue => {}
+            Message::Redraw => {
                 terminal.draw(|frame| draw(&mut state, frame))?;
                 date_pane::center_selection(&mut state);
                 solution_pane::center_selection(&mut state);

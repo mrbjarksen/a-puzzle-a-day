@@ -3,13 +3,15 @@ use super::{State, Pane, SMALL, PADDING};
 use std::cmp::max;
 use std::collections::HashMap;
 
-use ratatui::layout::{Position, Offset};
-use ratatui::{prelude::*, widgets::*};
-
 use crossterm::event::{Event, KeyEventKind, KeyCode, MouseEventKind, MouseButton};
 
+use ratatui::terminal::Frame;
+use ratatui::layout::{Rect, Position, Offset};
+use ratatui::widgets::Paragraph;
+use ratatui::style::{Style, Color};
+
 #[derive(Default, Debug)]
-pub struct SolutionPaneState {
+pub struct SolutionPane {
     pub num_cols: u16,
     pub scroll: i32,
     pub area: Rect,
@@ -17,33 +19,22 @@ pub struct SolutionPaneState {
 }
 
 pub fn draw(state: &mut State, frame: &mut Frame) {
-    let block = Block::default()
-        .padding(Padding::horizontal(PADDING))
-        .borders(Borders::LEFT | Borders::RIGHT)
-        .border_type(BorderType::Thick)
-        .border_style(match state.focused_pane {
-            Pane::Date     => Style::default().add_modifier(Modifier::DIM),
-            Pane::Solution => Style::default().fg(Color::Blue),
-        });
-
-    frame.render_widget(block.clone(), state.solution_pane.area);
-
     state.solution_pane.buttons.clear();
 
     if let Some(boards) = state.solutions.get(&state.date_pane.selected) {
-        let origin = Position::from(block.inner(state.solution_pane.area));
+        let origin = Position::from(state.solution_pane.area);
 
         for (i, board) in boards.iter().enumerate() {
             let offset = Offset {
                 x: (SMALL.width as i32 + 1) * (i as i32 % state.solution_pane.num_cols as i32),
-                y: SMALL.height as i32 * (i as i32 / state.solution_pane.num_cols as i32) - state.solution_pane.scroll,
+                y: SMALL.height as i32 * (i as i32 / state.solution_pane.num_cols as i32) - state.solution_pane.scroll + PADDING as i32 / 2,
             };
 
             let mut rect = Rect::from((origin, SMALL)).offset(offset).intersection(state.solution_pane.area);
 
             if offset.y < 0 {
                 rect = Rect {
-                    height: max(rect.height as i32 + offset.y, 0) as u16,
+                    height: max(0, rect.height as i32 + offset.y) as u16,
                     ..rect
                 };
             }
@@ -53,10 +44,10 @@ pub fn draw(state: &mut State, frame: &mut Frame) {
             }
 
             let thumbnail = Paragraph::new(board.to_mini_string())
-                .style(match state.selected_solutions.get(&state.date_pane.selected) {
-                    Some(&index) if i == index => Style::default(),
-                    _ => Style::default().add_modifier(Modifier::DIM),
-                })
+                .style(Style::default().fg(match state.selected_solutions.get(&state.date_pane.selected) {
+                    Some(&index) if i == index => Color::White,
+                    _ => Color::DarkGray,
+                }))
                 .scroll(if rect.y == origin.y { (SMALL.height - rect.height, 0) } else { (0, 0) });
 
             frame.render_widget(thumbnail, rect);
@@ -171,7 +162,7 @@ fn clamp_scroll(state: &mut State) {
         Some(&num_solutions) => 1 + (num_solutions as u16 - 1) / state.solution_pane.num_cols
     };
 
-    let max_scroll = (SMALL.height * num_rows)
+    let max_scroll = (SMALL.height * num_rows + PADDING)
         .saturating_sub(state.solution_pane.area.bottom());
 
     state.solution_pane.scroll = state.solution_pane.scroll
