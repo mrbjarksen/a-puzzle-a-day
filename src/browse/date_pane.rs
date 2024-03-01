@@ -42,11 +42,13 @@ pub fn draw(state: &mut State, frame: &mut Frame) {
     for i in 0.. {
         let offset = Offset { x: 0, y: (BIG.height as i32 + 1) * i - state.date_pane.scroll };
 
-        let mut rect = Rect::from((origin, BIG)).offset(offset).intersection(state.date_pane.area);
+        let mut rect = Rect::from((origin, BIG))
+            .offset(offset)
+            .intersection(state.date_pane.area);
 
         if offset.y < 0 {
             rect = Rect {
-                height: max(0, rect.height as i32 + offset.y) as u16,
+                height: max(0, rect.height as i32 + offset.y + 1) as u16,
                 ..rect
             };
         }
@@ -68,7 +70,7 @@ pub fn draw(state: &mut State, frame: &mut Frame) {
                 selected if date == selected => Color::White,
                 _ => Color::DarkGray,
             }))
-            .scroll(if rect.y == origin.y { (BIG.height - rect.height, 0) } else { (0, 0) });
+            .scroll(if date == state.date_pane.top_date { (BIG.height - rect.height, 0) } else { (0, 0) });
 
         frame.render_widget(thumbnail, rect);
 

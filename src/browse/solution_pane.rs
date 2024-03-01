@@ -27,14 +27,18 @@ pub fn draw(state: &mut State, frame: &mut Frame) {
         for (i, board) in boards.iter().enumerate() {
             let offset = Offset {
                 x: (SMALL.width as i32 + 1) * (i as i32 % state.solution_pane.num_cols as i32),
-                y: SMALL.height as i32 * (i as i32 / state.solution_pane.num_cols as i32) - state.solution_pane.scroll + PADDING as i32 / 2,
+                y: SMALL.height as i32 * (i as i32 / state.solution_pane.num_cols as i32)
+                    - state.solution_pane.scroll
+                    + PADDING as i32 / 2,
             };
 
-            let mut rect = Rect::from((origin, SMALL)).offset(offset).intersection(state.solution_pane.area);
+            let mut rect = Rect::from((origin, SMALL))
+                .offset(offset)
+                .intersection(state.solution_pane.area);
 
             if offset.y < 0 {
                 rect = Rect {
-                    height: max(0, rect.height as i32 + offset.y) as u16,
+                    height: max(0, rect.height as i32 + offset.y + 1) as u16,
                     ..rect
                 };
             }
@@ -130,7 +134,7 @@ pub fn center_selection(state: &mut State) {
         None => { state.solution_pane.scroll = 0; }
         Some(&index) => {
             let row_num = index as u16 / state.solution_pane.num_cols;
-            let center_y = state.solution_pane.area.top() + state.solution_pane.area.height / 2 - SMALL.height / 2;
+            let center_y = state.solution_pane.area.top() + state.solution_pane.area.height / 2 - SMALL.height / 2 - (PADDING + 1) / 2;
             state.solution_pane.scroll = (row_num * SMALL.height) as i32 - center_y as i32;
             clamp_scroll(state);
         }
@@ -162,8 +166,8 @@ fn clamp_scroll(state: &mut State) {
         Some(&num_solutions) => 1 + (num_solutions as u16 - 1) / state.solution_pane.num_cols
     };
 
-    let max_scroll = (SMALL.height * num_rows + PADDING)
-        .saturating_sub(state.solution_pane.area.bottom());
+    let max_scroll = (SMALL.height * num_rows + PADDING + 1)
+        .saturating_sub(state.solution_pane.area.bottom() + PADDING % 2);
 
     state.solution_pane.scroll = state.solution_pane.scroll
         .clamp(0, max_scroll as i32);
