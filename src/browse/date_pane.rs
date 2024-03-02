@@ -1,16 +1,15 @@
-use super::{solution_pane, Pane, State, BIG};
+use super::{solution_pane, Pane, State, BIG, PADDING};
 
-use crate::board::Board;
+use crate::board::{Board, DateMap};
 use crate::board::square::Date;
 
 use std::cmp::max;
-use std::collections::HashMap;
 
 use crossterm::event::{Event, KeyEventKind, KeyCode, MouseEventKind, MouseButton};
 
 use ratatui::terminal::Frame;
-use ratatui::layout::{Rect, Position, Offset};
-use ratatui::widgets::Paragraph;
+use ratatui::layout::{Rect, Position, Size, Offset};
+use ratatui::widgets::{Paragraph, Block, Padding};
 use ratatui::style::{Style, Color};
 
 #[derive(Debug)]
@@ -19,7 +18,7 @@ pub struct DatePane {
     pub top_date: Date,
     pub scroll: i32,
     pub area: Rect,
-    pub buttons: HashMap<Rect, Date>,
+    pub buttons: DateMap<Rect>,
 }
 
 impl DatePane {
@@ -29,7 +28,7 @@ impl DatePane {
             top_date: date,
             scroll: 0,
             area: Rect::default(),
-            buttons: HashMap::new(),
+            buttons: DateMap::new(),
         }
     }
 }
@@ -37,12 +36,16 @@ impl DatePane {
 pub fn draw(state: &mut State, frame: &mut Frame) {
     state.date_pane.buttons.clear();
 
+    let color = match state.focused_pane {
+        Pane::Date     => Color::Blue,
+        Pane::Solution => Color::DarkGray,
+    };
     let origin = Position::from(state.date_pane.area);
     let mut date = state.date_pane.top_date;
     for i in 0.. {
-        let offset = Offset { x: 0, y: (BIG.height as i32 + 1) * i - state.date_pane.scroll };
+        let offset = Offset { x: PADDING as i32 - 1, y: (BIG.height as i32 + 1) * i - state.date_pane.scroll };
 
-        let mut rect = Rect::from((origin, BIG))
+        let mut rect = Rect::from((origin, Size { width: BIG.width + 2, ..BIG }))
             .offset(offset)
             .intersection(state.date_pane.area);
 
@@ -66,17 +69,22 @@ pub fn draw(state: &mut State, frame: &mut Frame) {
             .unwrap_or(&empty_board);
 
         let thumbnail = Paragraph::new(board.to_string())
-            .style(Style::default().fg(match state.date_pane.selected {
-                selected if date == selected => Color::White,
-                _ => Color::DarkGray,
-            }))
+            .style(Style::default().fg(color))
+            .block(Block::new().padding(Padding::horizontal(1)))
             .scroll(if date == state.date_pane.top_date { (BIG.height - rect.height, 0) } else { (0, 0) });
 
         frame.render_widget(thumbnail, rect);
 
-        state.date_pane.buttons.insert(rect, date);
+
+
+        state.date_pane.buttons.insert(date, rect);
 
         date = date.next();
+    }
+
+    if let Some((_, &rect)) = state.date_pane.buttons.iter().find(|&(&date, _)| date == state.date_pane.selected) {
+        let block = Block::new().style(Style::default().fg(Color::Black).bg(color));
+        frame.render_widget(block, rect);
     }
 }
 
@@ -103,9 +111,9 @@ pub fn update(state: &mut State, event: &Event) {
         Event::Mouse(click) if click.kind == MouseEventKind::Down(MouseButton::Left) => {
             state.focused_pane = Pane::Date;
             let position = Position::new(click.column, click.row);
-            let button = state.date_pane.buttons.iter().find(|&(rect, _)| rect.contains(position));
-            if let Some((_, date)) = button {
-                state.date_pane.selected = *date;
+            let button = state.date_pane.buttons.iter().find(|&(_, &rect)| rect.contains(position));
+            if let Some((&date, _)) = button {
+                state.date_pane.selected = date;
                 solution_pane::center_selection(state);
                 scroll_to_selection(state);
             }

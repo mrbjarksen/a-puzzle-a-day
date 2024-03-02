@@ -6,8 +6,8 @@ use std::collections::HashMap;
 use crossterm::event::{Event, KeyEventKind, KeyCode, MouseEventKind, MouseButton};
 
 use ratatui::terminal::Frame;
-use ratatui::layout::{Rect, Position, Offset};
-use ratatui::widgets::Paragraph;
+use ratatui::layout::{Rect, Position, Size, Offset};
+use ratatui::widgets::{Paragraph, Block, Padding};
 use ratatui::style::{Style, Color};
 
 #[derive(Default, Debug)]
@@ -15,24 +15,30 @@ pub struct SolutionPane {
     pub num_cols: u16,
     pub scroll: i32,
     pub area: Rect,
-    pub buttons: HashMap<Rect, usize>,
+    pub buttons: HashMap<usize, Rect>,
 }
 
 pub fn draw(state: &mut State, frame: &mut Frame) {
     state.solution_pane.buttons.clear();
 
     if let Some(boards) = state.solutions.get(&state.date_pane.selected) {
-        let origin = Position::from(state.solution_pane.area);
+        let color = match state.focused_pane {
+            Pane::Date     => Color::DarkGray,
+            Pane::Solution => Color::Blue,
+        };
 
         for (i, board) in boards.iter().enumerate() {
+            let origin = Position::from(state.solution_pane.area);
+
             let offset = Offset {
-                x: (SMALL.width as i32 + 1) * (i as i32 % state.solution_pane.num_cols as i32),
+                x: (SMALL.width as i32 + 2) * (i as i32 % state.solution_pane.num_cols as i32)
+                    + PADDING as i32 - 1,
                 y: SMALL.height as i32 * (i as i32 / state.solution_pane.num_cols as i32)
                     - state.solution_pane.scroll
                     + PADDING as i32 / 2,
             };
 
-            let mut rect = Rect::from((origin, SMALL))
+            let mut rect = Rect::from((origin, Size { width: SMALL.width + 2, ..SMALL }))
                 .offset(offset)
                 .intersection(state.solution_pane.area);
 
@@ -48,15 +54,20 @@ pub fn draw(state: &mut State, frame: &mut Frame) {
             }
 
             let thumbnail = Paragraph::new(board.to_mini_string())
-                .style(Style::default().fg(match state.selected_solutions.get(&state.date_pane.selected) {
-                    Some(&index) if i == index => Color::White,
-                    _ => Color::DarkGray,
-                }))
+                .style(Style::default().fg(color))
+                .block(Block::new().padding(Padding::horizontal(1)))
                 .scroll(if rect.y == origin.y { (SMALL.height - rect.height, 0) } else { (0, 0) });
 
             frame.render_widget(thumbnail, rect);
 
-            state.solution_pane.buttons.insert(rect, i);
+            state.solution_pane.buttons.insert(i, rect);
+        }
+
+        if let Some(&selected) = state.selected_solutions.get(&state.date_pane.selected) {
+            if let Some((_, &rect)) = state.solution_pane.buttons.iter().find(|&(&index, _)| index == selected) {
+                let block = Block::new().style(Style::default().fg(Color::Black).bg(color));
+                frame.render_widget(block, rect);
+            }
         }
     }
 }
@@ -111,9 +122,9 @@ pub fn update(state: &mut State, event: &Event) {
         Event::Mouse(click) if click.kind == MouseEventKind::Down(MouseButton::Left) => {
             state.focused_pane = Pane::Solution;
             let position = Position::new(click.column, click.row);
-            let button = state.solution_pane.buttons.iter().find(|&(rect, _)| rect.contains(position));
-            if let Some((_, index)) = button {
-                state.selected_solutions.insert(state.date_pane.selected, *index);
+            let button = state.solution_pane.buttons.iter().find(|&(_, &rect)| rect.contains(position));
+            if let Some((&index, _)) = button {
+                state.selected_solutions.insert(state.date_pane.selected, index);
                 scroll_to_selection(state);
             }
         }
