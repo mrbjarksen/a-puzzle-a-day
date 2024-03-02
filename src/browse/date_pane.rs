@@ -10,7 +10,8 @@ use crossterm::event::{Event, KeyEventKind, KeyCode, MouseEventKind, MouseButton
 use ratatui::terminal::Frame;
 use ratatui::layout::{Rect, Position, Size, Offset};
 use ratatui::widgets::{Paragraph, Block, Padding};
-use ratatui::style::{Style, Color};
+use ratatui::text::Line;
+use ratatui::style::{Style, Color, Modifier};
 
 #[derive(Debug)]
 pub struct DatePane {
@@ -75,7 +76,24 @@ pub fn draw(state: &mut State, frame: &mut Frame) {
 
         frame.render_widget(thumbnail, rect);
 
+        if let Some(&index) = state.selected_solutions.get(&date) {
+            if let Some(&count) = state.solution_count.get(&date) {
+                let info = Line::from(format!("#{} / {}", index + 1, count))
+                    .style(Style::default().add_modifier(Modifier::ITALIC))
+                    .right_aligned();
 
+                let info_rect = state.date_pane.area.intersection(Rect {
+                    x: rect.left() + 17,
+                    y: if date == state.date_pane.top_date { rect.bottom() - 2 } else { rect.top() + 15 },
+                    width: 15,
+                    height: 1,
+                });
+                
+                if !info_rect.is_empty() {
+                    frame.render_widget(info, info_rect);
+                }
+            }
+        }
 
         state.date_pane.buttons.insert(date, rect);
 
