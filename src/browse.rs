@@ -76,7 +76,7 @@ pub const PADDING: u16 = 3;
 fn draw(state: &mut State, frame: &mut Frame) {
     state.solution_pane.num_cols = {
         let max_solution_pane_width = frame.size().width - 4*(PADDING + 1) - BIG.width;
-        (max_solution_pane_width + 2) / (SMALL.width + 2)
+        max_solution_pane_width / (SMALL.width + 2)
     };
 
     if state.solution_pane.num_cols == 0 || frame.size().height < BIG.height + 2 {
@@ -86,7 +86,7 @@ fn draw(state: &mut State, frame: &mut Frame) {
 
     let panes = Layout::horizontal([
         BIG.width + 2*(PADDING + 1),
-        state.solution_pane.num_cols * (SMALL.width + 2) - 2 + 2*(PADDING + 1)
+        state.solution_pane.num_cols * (SMALL.width + 2) + 2*PADDING
     ])
         .flex(Flex::Center)
         .split(frame.size());
@@ -98,7 +98,6 @@ fn draw(state: &mut State, frame: &mut Frame) {
             horizontal_bottom: border::QUADRANT_BLOCK,
             ..border::QUADRANT_INSIDE
         })
-        // .padding(Padding::horizontal(PADDING))
         .title_style(Style::default().fg(Color::Black).bg(Color::Blue));
 
     // Render date pane

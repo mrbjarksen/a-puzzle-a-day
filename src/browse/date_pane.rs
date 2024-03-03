@@ -161,9 +161,9 @@ pub fn scroll_to_selection(state: &mut State) {
         return;
     }
 
-    let bottom = state.date_pane.area.bottom() as i32;
+    let bottom = (state.date_pane.area.bottom() + (BIG.height + 1)) as i32;
     let mut dates_on_screen = std::iter::successors(
-        Some((state.date_pane.top_date, -state.date_pane.scroll)),
+        Some((state.date_pane.top_date.prev(), -state.date_pane.scroll - (BIG.height + 1) as i32)),
         |(date, y)| {
             let next_y = y + (BIG.height + 1) as i32;
             (next_y < bottom).then_some((date.next(), next_y))
@@ -173,8 +173,8 @@ pub fn scroll_to_selection(state: &mut State) {
     match dates_on_screen.find(|&(date, _)| date == state.date_pane.selected) {
         None => { center_selection(state); }
         Some((_, selected_y)) => {
-            let top_y = state.date_pane.area.top() as i32 + (BIG.height + 1) as i32 / 4;
-            let bottom_y = bottom - ((BIG.height + 1) + (BIG.height + 1) / 4) as i32;
+            let top_y = (state.date_pane.area.top() + PADDING / 2) as i32 - 1;
+            let bottom_y = (state.date_pane.area.bottom() - BIG.height - PADDING / 2 - 1) as i32;
             if top_y > selected_y {
                 state.date_pane.scroll -= top_y - selected_y;
                 fix_scroll(state);

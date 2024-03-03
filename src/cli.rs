@@ -9,7 +9,7 @@ use chrono::{Local, Datelike, Duration, Month};
 #[command(author, version, about, long_about = None)]
 pub struct Config {
     /// Mode of use
-    #[arg(value_enum, default_value_t = Mode::Random)]
+    #[arg(value_enum, default_value_t = Mode::Browse)]
     pub mode: Mode,
     /// Date to show solutions for
     #[arg(short, long, value_parser = parse_date_or_today, default_value = "today")]

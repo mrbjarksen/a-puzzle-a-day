@@ -158,10 +158,9 @@ pub fn scroll_to_selection(state: &mut State) {
         Some(&index) => {
             let row_num = index as u16 / state.solution_pane.num_cols;
             let selected_y = (row_num * SMALL.height) as i32 - state.solution_pane.scroll;
-            let top_y = state.solution_pane.area.top() as i32 + (SMALL.height / 4) as i32;
-            let bottom_y = (state.solution_pane.area.bottom() - (SMALL.height + SMALL.height / 4)) as i32;
-            if top_y > selected_y {
-                state.solution_pane.scroll -= top_y - selected_y;
+            let bottom_y = (state.solution_pane.area.height - SMALL.height - PADDING + PADDING % 2) as i32;
+            if selected_y < 0 {
+                state.solution_pane.scroll += selected_y;
                 clamp_scroll(state);
             } else if selected_y > bottom_y {
                 state.solution_pane.scroll += selected_y - bottom_y;
