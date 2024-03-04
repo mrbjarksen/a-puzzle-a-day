@@ -12,6 +12,51 @@ This piece of software can serve as a holy light for those
 despondent, ego-shattering days, allowing you to generate
 and browse all solutions for all days at your leisure.
 
+## Usage
+
+There are three main modes of use: `browse`, `random`, and `generate`.
+
+### Browse
+
+![image](https://github.com/mrbjarksen/a-puzzle-a-day/assets/62466569/986c1024-3a14-481c-bad9-dea56a74ec77)
+
+```
+$ a-puzzle-a-day browse [-f/--file <FILE>] [-d/--date <DATE>]
+```
+
+Open a TUI showing all solutions. The UI is split into two panes: the date pane (left) and the solution pane (right).
+To navigate, use the arrow buttons or hjkl. To switch panes, press Tab or Enter. To quit, press Escape or q.
+
+Alternatively, there is full mouse support, including scroll.
+
+Note that colors were chosen with a dark terminal theme in mind. There is currently no way to change colorschemes.
+
+### Random
+
+```
+$ a-puzzle-a-day random [-f/--file <FILE>] [-d/--date <DATE>]
+```
+
+This will display a random solution for the current date, or the date specified by
+the option `-d` or `--date`.
+
+### Generate
+
+![generate](https://github.com/mrbjarksen/a-puzzle-a-day/assets/62466569/03eb50bb-c795-42b9-9f35-5eebe4e05776)
+
+```
+$ a-puzzle-a-day generate [-f/--file <FILE>]
+```
+
+This will generate all solutions and write them to the file `solutions.apad`,
+or the file specified by the option `-f` or `--file`
+(this file is identical to the solutions file found in this repository).
+
+Solutions are found using brute-force, each piece placed on each square in parallel.
+Care has been made in minimizing the amount of work needed, but the generation will
+take at least a few seconds and a few dozen threads.
+
+
 ## Installation
 
 Currently, this software can only be installed from source, using [Cargo](https://doc.rust-lang.org/stable/cargo/):
@@ -20,34 +65,3 @@ $ cargo install --git https://github.com/mrbjarksen/a-puzzle-a-day
 ```
 This will place the exectuable `a-puzzle-a-day` into `$HOME/.cargo/bin`
 (by default), which should be added to `$PATH`.
-
-## Usage
-
-There are three main modes of use: `generate`, `browse`, and `random`.
-
-### Generate
-```
-$ a-puzzle-a-day generate
-```
-This will generate all solutions and write them to the file `solutions.apad`,
-or the file specified by the option `-f` or `--file` if found
-(this file is identical to the solutions file found in this repository).
-
-Solutions are found using brute-force, each piece placed on each square in parallel.
-Care has been made in minimizing the amount of work needed, but the generation will
-take at least a few seconds and a few dozen threads.
-
-![generate](https://github.com/mrbjarksen/a-puzzle-a-day/assets/62466569/03eb50bb-c795-42b9-9f35-5eebe4e05776)
-
-### Random
-```
-$ a-puzzle-a-day random
-```
-This will display a random solution for the current date, or the date specified by
-the option `-d` or `--date`.
-
-### Browse
-```
-$ a-puzzle-a-day browse
-```
-Open a TUI showing all solutions. This mode is still a work in progress.
