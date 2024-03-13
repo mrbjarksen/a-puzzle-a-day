@@ -1,9 +1,13 @@
 [package]
 name = "a-puzzle-a-day"
+description = "Generate and browse all solutions to A-Puzzle-A-Day"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+repository = "https://github.com/mrbjarksen/a-puzzle-a-day"
+license = "GPL-2.0-only"
+keywords = ["puzzle", "tui"]
+categories = ["command-line-utilities", "games", "visualization"]
+exclude = ["docs"]
 
 [dependencies]
 chrono = "0.4.31"
