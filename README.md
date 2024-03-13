@@ -51,6 +51,7 @@ $ a-puzzle-a-day generate [-f/--file <FILE>]
 This will generate all solutions and write them to the file `solutions.apad`,
 or the file specified by the option `-f` or `--file`
 (this file is identical to the solutions file found in this repository).
+The file created uses a custom-built binary file format, named [APAD](docs/APAD.md).
 
 Solutions are found using brute-force, each piece placed on each square in parallel.
 Care has been made in minimizing the amount of work needed, but the generation will
