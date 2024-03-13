@@ -1,4 +1,4 @@
 pub mod board;
-pub mod search;
+pub mod solutions;
 pub mod cli;
 pub mod browse;

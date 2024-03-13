@@ -15,8 +15,8 @@ pub struct Config {
     #[arg(short, long, value_parser = parse_date_or_today, default_value = "today")]
     pub date: Date,
     /// Where to look for solutions
-    #[arg(short, long, default_value = "solutions.apad")]
-    pub file: PathBuf,
+    #[arg(short, long)]
+    pub file: Option<PathBuf>,
 }
 
 #[derive(Clone, ValueEnum, Debug)]

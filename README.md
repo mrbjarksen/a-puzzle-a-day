@@ -57,6 +57,8 @@ Solutions are found using brute-force, each piece placed on each square in paral
 Care has been made in minimizing the amount of work needed, but the generation will
 take at least a few seconds and a few dozen threads.
 
+**Note**: this is generally unnecessary, as the solutions are included
+in the binary.
 
 ## Installation
 

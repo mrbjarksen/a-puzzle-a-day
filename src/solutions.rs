@@ -7,12 +7,14 @@ use std::sync::Arc;
 
 use std::fs::File;
 use std::path::PathBuf;
-use std::io::{self, Read, Write};
+use std::io::{self, Write};
 
 use console::style;
 use indicatif::{ProgressBar, MultiProgress, ProgressStyle, ProgressIterator, ProgressFinish};
 
-pub fn generate_solutions(starting_board: Board, pieces: Vec<Piece>, progress: Option<&MultiProgress>) -> Result<Receiver<Board>, SendError<Board>> {
+pub static SOLUTIONS: &[u8] = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/solutions.apad"));
+
+pub fn generate(starting_board: Board, pieces: Vec<Piece>, progress: Option<&MultiProgress>) -> Result<Receiver<Board>, SendError<Board>> {
     let (tx0, rx0) = mpsc::channel();
     tx0.send(starting_board)?;
     drop(tx0);
@@ -113,7 +115,7 @@ impl From<io::Error> for DataError {
     }
 }
 
-pub fn create_database(boards: Vec<Board>, file: PathBuf) -> Result<(), DataError> {
+pub fn write_boards(boards: Vec<Board>, file: PathBuf) -> Result<(), DataError> {
     let mut file_handle = File::create(file.clone())?;
 
     println!(
@@ -136,23 +138,19 @@ pub fn create_database(boards: Vec<Board>, file: PathBuf) -> Result<(), DataErro
     Ok(())
 }
 
-pub fn read_database(file: PathBuf) -> Result<Vec<Board>, DataError> {
-    let mut file = File::open(file)?;
+pub fn read_boards(bytes: &[u8]) -> Result<Vec<Board>, DataError> {
     let mut boards = Vec::new();
 
-    let mut buffer = [0; 9];
-    loop {
-        match file.read_exact(&mut buffer) {
-            Ok(_) => { boards.push(Board::try_from(CompactBoard::from(buffer))?); }
-            Err(e) if e.kind() == io::ErrorKind::UnexpectedEof => { break; }
-            Err(e) => { return Err(DataError::from(e)); }
-        }
+    for chunk in bytes.chunks_exact(9) {
+        let chunk: [u8; 9] = chunk.try_into().expect("chunk size should be exactly 9");
+        let compact = CompactBoard::from(chunk);
+        boards.push(Board::try_from(compact)?);
     }
-    
+
     Ok(boards)
 }
 
-pub fn classify_solutions(boards: Vec<Board>) -> DateMap<Vec<Board>> {
+pub fn classify(boards: Vec<Board>) -> DateMap<Vec<Board>> {
     let mut solutions = DateMap::<Vec<Board>>::new();
     for board in boards {
         if let Some(date) = board.solved_for() {

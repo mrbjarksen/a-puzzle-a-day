@@ -1,28 +1,31 @@
 use a_puzzle_a_day::board::*;
-use a_puzzle_a_day::search;
+use a_puzzle_a_day::solutions;
 use a_puzzle_a_day::browse;
 use a_puzzle_a_day::cli::*;
 
 use std::process;
 use std::path::PathBuf;
+use std::fs::File;
+use std::io::Read;
 
 use rand::seq::SliceRandom;
 use clap::Parser;
 use indicatif::{ProgressBar, ProgressStyle, MultiProgress};
 use dialoguer::Confirm;
 
+fn error(msg: &str) -> ! {
+    eprintln!("{}", msg);
+    process::exit(1);
+}
+
 fn generate(file: PathBuf) -> Vec<Board> {
     let progress = MultiProgress::new();
     
     use Piece::*;
     let pieces = vec![O, Z, V, U, Y, N, P, L];
-    let boards = match search::generate_solutions(Board::default(), pieces, Some(&progress)) {
-        Ok(rx) => rx,
-        Err(_) => {
-            eprintln!("error encountered while generating solutions");
-            process::exit(1);
-        }
-    };
+    let boards =
+        solutions::generate(Board::default(), pieces, Some(&progress))
+            .unwrap_or_else(|_| error("error encountered while generating solutions"));
 
     let bar = progress.add(ProgressBar::new_spinner());
     bar.set_style(
@@ -44,34 +47,36 @@ fn generate(file: PathBuf) -> Vec<Board> {
 
     progress.set_move_cursor(true);
 
-    match search::create_database(solutions.clone(), file) {
+    match solutions::write_boards(solutions.clone(), file) {
         Ok(_) => {
             println!("\x1b[33m⣿ Finished\x1b[0m");
             solutions
         }
-        Err(_) => {
-            eprintln!("error encountered while writing solutions to file");
-            process::exit(1);
-        }
+        Err(_) => error("error encountered while writing solutions to file")
     }
 }
 
-fn get_solutions(file: PathBuf) -> DateMap<Vec<Board>> {
-    search::classify_solutions(if file.as_path().exists() {
-        match search::read_database(file) {
-            Ok(boards) => boards,
-            Err(_) => {
-                eprintln!("error encountered when reading solutions from file");
-                process::exit(1);
-            }
+fn get_solutions(file: Option<PathBuf>) -> DateMap<Vec<Board>> {
+    solutions::classify(match file {
+        None => {
+            solutions::read_boards(solutions::SOLUTIONS)
+                .unwrap_or_else(|_| error("error encountered when decoding solutions"))
         }
-    } else {
-        let confirm = Confirm::new()
-            .with_prompt(format!("File `{}` not found. Generate solutions?", file.as_path().display()))
-            .interact();
-        match confirm {
-            Ok(true) => generate(file),
-            _ => { process::exit(1); }
+        Some(file) => {
+            if file.as_path().exists() {
+                let handle = File::open(file).unwrap_or_else(|err| error(&format!("error: {err})")));
+                let bytes: Vec<u8> = handle.bytes().map(|res| res.unwrap_or_else(|err| error(&format!("error: {err}")))).collect();
+                solutions::read_boards(&bytes)
+                    .unwrap_or_else(|_| error("error encountered when decoding solutions"))
+            } else {
+                let confirm = Confirm::new()
+                    .with_prompt(format!("File `{}` not found. Generate solutions?", file.as_path().display()))
+                    .interact();
+                match confirm {
+                    Ok(true) => generate(file),
+                    _ => { process::exit(1); }
+                }
+            }
         }
     })
 }
@@ -80,7 +85,10 @@ fn main() {
     let config = Config::parse();
 
     match config.mode {
-        Mode::Generate => { generate(config.file); }
+        Mode::Generate => {
+            let file = config.file.unwrap_or(PathBuf::from("solutions.apad"));
+            generate(file);
+        }
         Mode::Browse => {
             let solutions = get_solutions(config.file);
             if let Err(e) = browse::browse(solutions, config.date) {
