@@ -25,7 +25,7 @@ $ a-puzzle-a-day browse [-f/--file <FILE>] [-d/--date <DATE>]
 ```
 
 Open a TUI showing all solutions. The UI is split into two panes: the date pane (left) and the solution pane (right).
-To navigate, use the arrow buttons or hjkl. To switch panes, press Tab or Enter. To quit, press Escape or q.
+To navigate, use the arrow keys or hjkl. To switch panes, press Tab or Enter. To quit, press Escape or q.
 
 Alternatively, there is full mouse support, including scroll.
 
@@ -62,9 +62,21 @@ in the binary.
 
 ## Installation
 
-Currently, this software can only be installed from source, using [Cargo](https://doc.rust-lang.org/stable/cargo/):
+This software can be installed using [Cargo](https://doc.rust-lang.org/stable/cargo/),
+from the [crates.io](https://crates.io/) registry.
+
 ```
-$ cargo install --git https://github.com/mrbjarksen/a-puzzle-a-day
+$ cargo install a-puzzle-a-day
 ```
-This will place the exectuable `a-puzzle-a-day` into `$HOME/.cargo/bin`
+
+This will place the executable `a-puzzle-a-day` into `$HOME/.cargo/bin`
 (by default), which should be added to `$PATH`.
+
+Alternatively, to build from source:
+
+```
+git clone https://github.com/mrbjarksen/a-puzzle-a-day
+cd a-puzzle-a-day
+cargo build --release
+cp target/release/a-puzzle-a-day <DESIRED LOCATION>
+```
